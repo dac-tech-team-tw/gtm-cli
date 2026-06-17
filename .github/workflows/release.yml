@@ -54,6 +54,7 @@ jobs:
             --allow-write \
             --allow-env \
             --allow-run \
+            --allow-sys \
             --include src/agent-guide.md \
             --target ${{ matrix.target }} \
             --output ${{ matrix.binary }} \
