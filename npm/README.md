@@ -46,6 +46,7 @@ For full documentation, visit: https://github.com/owntag/gtm-cli
 
 - macOS (Intel and Apple Silicon)
 - Linux (x64)
+- Windows (x64)
 
 ## License
 
