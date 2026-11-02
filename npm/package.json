@@ -1,6 +1,6 @@
 {
-  "name": "@owntag/gtm-cli",
-  "version": "1.5.0",
+  "name": "@dac-tech-team-tw/gtm-cli",
+  "version": "1.6.2",
   "description": "Command-line interface for Google Tag Manager",
   "keywords": [
     "google-tag-manager",
@@ -10,16 +10,16 @@
     "tag-manager",
     "analytics"
   ],
-  "homepage": "https://github.com/owntag/gtm-cli",
+  "homepage": "https://github.com/dac-tech-team-tw/gtm-cli",
   "bugs": {
-    "url": "https://github.com/owntag/gtm-cli/issues"
+    "url": "https://github.com/dac-tech-team-tw/gtm-cli/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/owntag/gtm-cli.git"
+    "url": "git+https://github.com/dac-tech-team-tw/gtm-cli.git"
   },
   "license": "MIT",
-  "author": "owntag GmbH",
+  "author": "dac-tech-team-tw",
   "bin": {
     "gtm": "bin/gtm"
   },

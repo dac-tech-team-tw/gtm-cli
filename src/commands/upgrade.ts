@@ -117,8 +117,10 @@ export const upgradeCommand = new Command()
         file.close();
         console.log(""); // New line after progress
 
-        // Make executable
-        await Deno.chmod(tempPath, 0o755);
+        // Windows does not support Unix file modes.
+        if (Deno.build.os !== "windows") {
+          await Deno.chmod(tempPath, 0o755);
+        }
 
         // Replace current executable
         // On Unix, we can rename even while running

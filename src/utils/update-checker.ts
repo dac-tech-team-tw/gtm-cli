@@ -6,7 +6,7 @@
 import { ensureDir } from "@std/fs";
 import { getConfigDir, APP_VERSION } from "../config/constants.ts";
 
-const GITHUB_REPO = "owntag/gtm-cli";
+const GITHUB_REPO = "dac-tech-team-tw/gtm-cli";
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface UpdateCheckCache {
@@ -184,9 +184,15 @@ export async function forceCheckForUpdate(): Promise<{
  * Get the download URL for the current platform
  */
 export function getDownloadUrl(version: string): string {
-  const os = Deno.build.os === "darwin" ? "darwin" : "linux";
-  const arch = Deno.build.arch === "aarch64" ? "arm64" : "x64";
-  const binary = `gtm-${os}-${arch}`;
+  const { os, arch } = Deno.build;
+  if (
+    (os !== "darwin" && os !== "linux" && os !== "windows") ||
+    (arch !== "x86_64" && !(os === "darwin" && arch === "aarch64"))
+  ) {
+    throw new Error(`No release binary available for ${os}/${arch}`);
+  }
+  const releaseArch = arch === "aarch64" ? "arm64" : "x64";
+  const binary = `gtm-${os}-${releaseArch}${os === "windows" ? ".exe" : ""}`;
 
   return `https://github.com/${GITHUB_REPO}/releases/download/${version}/${binary}`;
 }
