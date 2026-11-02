@@ -74,6 +74,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Verify release versions
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node -e 'const d = require("./deno.json").version; const n = require("./npm/package.json").version; if (d !== n || process.env.RELEASE_TAG !== `v${d}`) { console.error(`Version mismatch: tag=${process.env.RELEASE_TAG}, deno=${d}, npm=${n}`); process.exit(1); }'
+
       - name: Download all artifacts
         uses: actions/download-artifact@v8
         with:
@@ -89,7 +95,35 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: release/*
+          fail_on_unmatched_files: true
           generate_release_notes: true
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm:
+    name: Publish npm package
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - name: Update npm for trusted publishing
+        run: npm install --global npm@latest
+
+      - name: Include full project README
+        run: cp README.md npm/README.md
+
+      - name: Publish
+        working-directory: npm
+        run: npm publish --access public

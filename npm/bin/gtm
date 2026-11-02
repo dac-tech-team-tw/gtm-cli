@@ -7,7 +7,7 @@
  * it will attempt to download it first.
  */
 
-const { spawn, execSync } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -18,10 +18,10 @@ const INSTALL_SCRIPT = path.join(__dirname, "..", "install.js");
 // Check if the binary exists
 if (!fs.existsSync(BIN_PATH)) {
   console.error("GTM CLI binary not found. Running install script...");
-  try {
-    execSync(`node "${INSTALL_SCRIPT}"`, { stdio: "inherit" });
-  } catch (error) {
-    process.exit(1);
+  const install = spawnSync(process.execPath, [INSTALL_SCRIPT], { stdio: "inherit" });
+  if (install.error || install.status !== 0) {
+    if (install.error) console.error(`Failed to run installer: ${install.error.message}`);
+    process.exit(install.status || 1);
   }
 }
 
@@ -30,8 +30,12 @@ const child = spawn(BIN_PATH, process.argv.slice(2), {
   stdio: "inherit",
 });
 
-child.on("close", (code) => {
-  process.exit(code);
+child.on("close", (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+  } else {
+    process.exit(code ?? 1);
+  }
 });
 
 child.on("error", (error) => {

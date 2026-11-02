@@ -9,13 +9,14 @@
  *   deno task release 2.0.0    # Set explicit version
  *
  * This script:
- * 1. Bumps the version in deno.json
+ * 1. Bumps the version in deno.json and npm/package.json
  * 2. Commits the change
  * 3. Creates a git tag
  * 4. Pushes to origin
  */
 
 const DENO_JSON_PATH = "deno.json";
+const NPM_PACKAGE_PATH = "npm/package.json";
 
 interface DenoConfig {
   version: string;
@@ -165,7 +166,7 @@ Example:
   console.log(`📦 Ready to release v${newVersion}`);
   console.log("");
   console.log("This will:");
-  console.log(`  1. Update version in deno.json to ${newVersion}`);
+  console.log(`  1. Update versions in deno.json and npm/package.json to ${newVersion}`);
   console.log(`  2. Commit the change`);
   console.log(`  3. Create tag v${newVersion}`);
   console.log(`  4. Push to origin`);
@@ -179,11 +180,14 @@ Example:
     }
   }
 
-  // Update deno.json
+  // Update both manifests from the Deno version, the source of truth.
   console.log("");
-  console.log("📝 Updating deno.json...");
+  console.log("📝 Updating deno.json and npm/package.json...");
+  const npmPackage = JSON.parse(await Deno.readTextFile(NPM_PACKAGE_PATH));
   denoJson.version = newVersion;
+  npmPackage.version = newVersion;
   await Deno.writeTextFile(DENO_JSON_PATH, JSON.stringify(denoJson, null, 2) + "\n");
+  await Deno.writeTextFile(NPM_PACKAGE_PATH, JSON.stringify(npmPackage, null, 2) + "\n");
 
   // Run type check to make sure everything still works
   console.log("🔍 Running type check...");
@@ -191,7 +195,7 @@ Example:
 
   // Commit
   console.log("📝 Committing...");
-  await runOrExit(["git", "add", DENO_JSON_PATH], "Failed to stage deno.json");
+  await runOrExit(["git", "add", DENO_JSON_PATH, NPM_PACKAGE_PATH], "Failed to stage manifests");
   await runOrExit(["git", "commit", "-m", `Release v${newVersion}`], "Failed to commit");
 
   // Create tag
@@ -207,11 +211,11 @@ Example:
   console.log(`✅ Successfully released v${newVersion}!`);
   console.log("");
   console.log("GitHub Actions will now:");
-  console.log("  1. Build binaries for macOS and Linux");
+  console.log("  1. Build binaries for Windows, macOS and Linux");
   console.log("  2. Create a GitHub release");
-  console.log("  3. Publish to npm as @owntag/gtm-cli");
+  console.log("  3. Publish to npm as @dac-tech-team-tw/gtm-cli");
   console.log("");
-  console.log(`Check progress at: https://github.com/owntag/gtm-cli/actions`);
+  console.log(`Check progress at: https://github.com/dac-tech-team-tw/gtm-cli/actions`);
 }
 
 main();

@@ -1,128 +1,77 @@
 #!/usr/bin/env node
 
-/**
- * Postinstall script for @owntag/gtm-cli
- *
- * Downloads the appropriate pre-built binary for the current platform
- * from GitHub releases.
- */
-
+// Download the binary corresponding to this package's exact version.
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { pipeline } = require("stream");
+const { promisify } = require("util");
 
-const REPO = "owntag/gtm-cli";
+const REPO = "dac-tech-team-tw/gtm-cli";
 const BIN_DIR = path.join(__dirname, "bin");
-const BIN_NAME = process.platform === "win32" ? "gtm-binary.exe" : "gtm-binary";
-const BIN_PATH = path.join(BIN_DIR, BIN_NAME);
+const BIN_PATH = path.join(BIN_DIR, process.platform === "win32" ? "gtm-binary.exe" : "gtm-binary");
+const streamPipeline = promisify(pipeline);
 
-/**
- * Get the binary name for the current platform
- */
 function getBinaryName() {
-  const platform = process.platform;
-  const arch = process.arch;
-
-  if (platform === "darwin") {
-    if (arch === "arm64") {
-      return "gtm-darwin-arm64";
-    } else if (arch === "x64") {
-      return "gtm-darwin-x64";
-    }
-  } else if (platform === "linux") {
-    if (arch === "x64") {
-      return "gtm-linux-x64";
-    }
-  } else if (platform === "win32") {
-    if (arch === "x64") {
-      return "gtm-windows-x64.exe";
-    }
+  const target = `${process.platform}-${process.arch}`;
+  const binaries = {
+    "darwin-x64": "gtm-darwin-x64",
+    "darwin-arm64": "gtm-darwin-arm64",
+    "linux-x64": "gtm-linux-x64",
+    "win32-x64": "gtm-windows-x64.exe",
+  };
+  if (!binaries[target]) {
+    throw new Error(`Unsupported platform: ${target}. Supported: ${Object.keys(binaries).join(", ")}.`);
   }
-
-  throw new Error(
-    `Unsupported platform: ${platform}-${arch}. GTM CLI supports darwin-x64, darwin-arm64, linux-x64, and windows-x64.`
-  );
+  return binaries[target];
 }
 
-/**
- * Download a file from URL to destination, following redirects
- */
-function download(url, dest) {
+function download(url, dest, redirects = 0) {
   return new Promise((resolve, reject) => {
-    const request = (url) => {
-      https
-        .get(url, (response) => {
-          // Handle redirects (GitHub releases use redirects)
-          if (response.statusCode === 301 || response.statusCode === 302) {
-            request(response.headers.location);
-            return;
-          }
-
-          if (response.statusCode !== 200) {
-            reject(new Error(`Failed to download: HTTP ${response.statusCode}`));
-            return;
-          }
-
-          const file = fs.createWriteStream(dest);
-          response.pipe(file);
-
-          file.on("finish", () => {
-            file.close();
-            resolve();
-          });
-
-          file.on("error", (err) => {
-            fs.unlink(dest, () => {});
-            reject(err);
-          });
-        })
-        .on("error", (err) => {
-          reject(err);
-        });
-    };
-
-    request(url);
+    https.get(url, (response) => {
+      if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
+        const location = response.headers.location;
+        response.resume();
+        if (!location || redirects >= 10) {
+          reject(new Error("Invalid or excessive download redirects"));
+          return;
+        }
+        const next = new URL(location, url);
+        if (next.protocol !== "https:") {
+          reject(new Error("Refusing non-HTTPS download redirect"));
+          return;
+        }
+        resolve(download(next, dest, redirects + 1));
+        return;
+      }
+      if (response.statusCode !== 200) {
+        response.resume();
+        reject(new Error(`Failed to download: HTTP ${response.statusCode}`));
+        return;
+      }
+      resolve(streamPipeline(response, fs.createWriteStream(dest)));
+    }).on("error", reject);
   });
 }
 
-/**
- * Get the version from package.json
- */
-function getVersion() {
-  const packageJson = require("./package.json");
-  return packageJson.version;
-}
-
 async function main() {
-  const version = getVersion();
+  const version = require("./package.json").version;
   const binaryName = getBinaryName();
-  const downloadUrl = `https://github.com/${REPO}/releases/download/v${version}/${binaryName}`;
-
+  const url = `https://github.com/${REPO}/releases/download/v${version}/${binaryName}`;
+  const temporaryPath = `${BIN_PATH}.${process.pid}.tmp`;
   console.log(`Downloading GTM CLI v${version} for ${process.platform}-${process.arch}...`);
-
-  // Create bin directory if it doesn't exist
-  if (!fs.existsSync(BIN_DIR)) {
-    fs.mkdirSync(BIN_DIR, { recursive: true });
-  }
-
+  fs.mkdirSync(BIN_DIR, { recursive: true });
   try {
-    await download(downloadUrl, BIN_PATH);
-
-    // Make binary executable (no-op on Windows)
-    if (process.platform !== "win32") {
-      fs.chmodSync(BIN_PATH, 0o755);
-    }
-
+    await download(url, temporaryPath);
+    if (process.platform !== "win32") fs.chmodSync(temporaryPath, 0o755);
+    fs.renameSync(temporaryPath, BIN_PATH);
     console.log("GTM CLI installed successfully!");
-  } catch (error) {
-    console.error(`Failed to install GTM CLI: ${error.message}`);
-    console.error(`Download URL: ${downloadUrl}`);
-    console.error("");
-    console.error("You can manually download the binary from:");
-    console.error(`https://github.com/${REPO}/releases/tag/v${version}`);
-    process.exit(1);
+  } finally {
+    if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath);
   }
 }
 
-main();
+main().catch((error) => {
+  console.error(`Failed to install GTM CLI: ${error.message}`);
+  process.exitCode = 1;
+});

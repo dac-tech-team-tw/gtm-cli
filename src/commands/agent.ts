@@ -21,7 +21,7 @@ async function getGuideContent(): Promise<string> {
     return `Error: Could not load agent guide.
 
 The guide file was not found. Please visit:
-https://github.com/owntag/gtm-cli/blob/main/src/agent-guide.md`;
+https://github.com/dac-tech-team-tw/gtm-cli/blob/main/src/agent-guide.md`;
   }
 }
 
@@ -49,7 +49,7 @@ export const agentCommand = new Command()
     
     if (!options.raw) {
       console.log("\n" + "=".repeat(70));
-      console.log("  End of Guide | https://github.com/owntag/gtm-cli");
+      console.log("  End of Guide | https://github.com/dac-tech-team-tw/gtm-cli");
       console.log("=".repeat(70) + "\n");
     }
   });

@@ -499,9 +499,6 @@ function getSuccessHtml(): string {
     <p class="message">You're all set! You can close this window and return to your terminal.</p>
     <div class="hint">gtm accounts list</div>
   </div>
-  <div class="footer">
-    Powered by <a href="https://owntag.eu" target="_blank">owntag</a>
-  </div>
 </body>
 </html>`;
 }
@@ -625,9 +622,6 @@ function getErrorHtml(error: string): string {
     <p class="message">Something went wrong during authentication.</p>
     <div class="error-detail">${error}</div>
     <p class="hint">Please try again with <code>gtm auth login</code></p>
-  </div>
-  <div class="footer">
-    Powered by <a href="https://owntag.eu" target="_blank">owntag</a>
   </div>
 </body>
 </html>`;

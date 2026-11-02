@@ -4,9 +4,9 @@
 
 **GTM CLI** is a command-line interface for Google Tag Manager, built with Deno and Cliffy. It provides full access to the GTM API v2, enabling users to manage all GTM resources from the terminal.
 
-**Maintained by**: owntag GmbH
+**Maintained by**: dac-tech-team-tw
 
-**Supported Platforms**: macOS, Linux (no Windows support)
+**Supported Platforms**: macOS arm64/x64, Linux x64, Windows x64
 
 ## Architecture
 
@@ -175,6 +175,7 @@ deno task compile
 #   gtm-darwin-arm64 (macOS Apple Silicon)
 #   gtm-darwin-x64 (macOS Intel)
 #   gtm-linux-x64 (Linux)
+#   gtm-windows-x64.exe (Windows x64)
 ```
 
 ## OAuth Credentials
@@ -216,60 +217,21 @@ deno task release 2.0.0    # Set explicit version
 
 The script will:
 1. Check for uncommitted changes
-2. Update version in `deno.json` (single source of truth)
+2. Update versions in `deno.json` and `npm/package.json`
 3. Commit the change
 4. Create a git tag
 5. Push to origin
 
-**Important:** The version is defined only in `deno.json` and imported by `src/config/constants.ts`. Never manually edit the version in constants.ts.
+**Important:** `deno.json` is the version source of truth; the release script synchronizes `npm/package.json`. Never manually edit the version in constants.ts.
 
 GitHub Actions will:
-1. Build binaries for macOS (arm64 + x64) and Linux (x64)
+1. Build binaries for macOS (arm64 + x64), Linux (x64), and Windows (x64)
 2. Embed OAuth credentials from secrets
 3. Create GitHub Release with binaries attached
-4. Publish to npm as `@owntag/gtm-cli`
+4. Publish to npm as `@dac-tech-team-tw/gtm-cli` after the release assets are uploaded
 
 ## npm Publishing
 
-The CLI is published to npm as `@owntag/gtm-cli` for easy installation and version pinning:
+The package is `@dac-tech-team-tw/gtm-cli`. Its installer downloads the matching GitHub Release binary; installation requires the package and release assets to have been published.
 
-```bash
-# Install globally
-npm install -g @owntag/gtm-cli
-
-# Or use with npx
-npx @owntag/gtm-cli --help
-
-# Pin to specific version in CI/CD
-npm install -g @owntag/gtm-cli@1.5.0
-```
-
-### npm Package Structure
-
-The `npm/` directory contains the npm package:
-- `package.json` - Package metadata and scripts
-- `install.js` - Postinstall script that downloads the correct binary
-- `bin/gtm` - Wrapper script that runs the binary
-- `README.md` - npm package documentation
-
-### npm Trusted Publishing Setup
-
-npm uses OIDC trusted publishing (no tokens needed). One-time setup on npmjs.com:
-
-1. **First publish**: Manually publish the package once to create it on npm:
-   ```bash
-   cd npm
-   npm publish --access public
-   ```
-   (You'll need to `npm login` first)
-
-2. **Configure trusted publisher** on npmjs.com:
-   - Go to https://www.npmjs.com/package/@owntag/gtm-cli/access
-   - Click "Add trusted publisher" → "GitHub Actions"
-   - Fill in:
-     - Organization/user: `owntag`
-     - Repository: `gtm-cli`
-     - Workflow filename: `release.yml`
-   - Click "Set up connection"
-
-After this, all future releases will automatically publish via OIDC - no secrets required.
+See [README.md](README.md) for installation, initial npm scope ownership and trusted publishing setup. `npm/install.js` selects the release asset, and `npm/bin/gtm` runs it.
