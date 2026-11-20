@@ -1,6 +1,6 @@
 {
   "name": "@dac-tech-team-tw/gtm-cli",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "description": "Command-line interface for Google Tag Manager",
   "keywords": [
     "google-tag-manager",
