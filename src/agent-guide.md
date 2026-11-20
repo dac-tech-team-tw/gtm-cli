@@ -140,20 +140,22 @@ gtm tags get --tag-id 27 -o json
 **Critical for Performance**: The CLI supports parallel operations. Use multiple commands in a single message when operations are independent.
 
 ```bash
-# Create multiple triggers in parallel
-gtm triggers create --name "CE - event1" --type CUSTOM_EVENT --config '...' &
-gtm triggers create --name "CE - event2" --type CUSTOM_EVENT --config '...' &
-gtm triggers create --name "CE - event3" --type CUSTOM_EVENT --config '...' &
+# Save each event's trigger configuration in its own JSON file first.
+gtm triggers create --name "CE - event1" --type CUSTOM_EVENT --config-file event1.json &
+gtm triggers create --name "CE - event2" --type CUSTOM_EVENT --config-file event2.json &
+gtm triggers create --name "CE - event3" --type CUSTOM_EVENT --config-file event3.json &
 wait
 ```
 
 ### 3. Working with JSON Configurations
 
-**Best Practice**: Use temporary files for complex JSON configurations to avoid escaping issues.
+Write JSON to a UTF-8 file with your file-writing tool, then pass its path. This avoids shell escaping and command-line length limits. UTF-8 BOMs are accepted.
 
-```bash
-# Create config file
-cat > /tmp/config.json << 'EOF'
+Use `--config-file` for resource configuration, `--container-access-file` for the JSON array of container permissions, and `--template-data-file` for raw `.tpl` content. Do not combine a file flag with its inline counterpart.
+
+Save as `currency.json`:
+
+```json
 {
   "parameter": [
     {
@@ -163,10 +165,10 @@ cat > /tmp/config.json << 'EOF'
     }
   ]
 }
-EOF
+```
 
-# Use in command
-gtm variables create --name "DLV - Currency" --type v --config "$(cat /tmp/config.json)"
+```bash
+gtm variables create --name "DLV - Currency" --type v --config-file currency.json
 ```
 
 ---
@@ -185,11 +187,11 @@ gtm variables create --name "DLV - Currency" --type v --config "$(cat /tmp/confi
 ### Creating Variables
 
 #### Constant Variable
-```bash
-gtm variables create \
-  --name "Meta Pixel ID" \
-  --type c \
-  --config '{
+
+Save as `pixel-id.json`:
+
+```json
+{
     "parameter": [
       {
         "type": "TEMPLATE",
@@ -197,15 +199,19 @@ gtm variables create \
         "value": "1234567890123456"
       }
     ]
-  }'
+}
+```
+
+```bash
+gtm variables create --name "Meta Pixel ID" --type c --config-file pixel-id.json
 ```
 
 #### Data Layer Variable
-```bash
-gtm variables create \
-  --name "DLV - ecommerce.currency" \
-  --type v \
-  --config '{
+
+Save as `dlv-currency.json`:
+
+```json
+{
     "parameter": [
       {
         "type": "INTEGER",
@@ -223,13 +229,18 @@ gtm variables create \
         "value": "ecommerce.currency"
       }
     ]
-  }'
+}
+```
+
+```bash
+gtm variables create --name "DLV - ecommerce.currency" --type v --config-file dlv-currency.json
 ```
 
 #### Custom JavaScript Variable
-```bash
-# Using heredoc for complex JavaScript
-cat > /tmp/custom_js.json << 'EOF'
+
+Save as `content-ids.json`:
+
+```json
 {
   "parameter": [
     {
@@ -239,23 +250,21 @@ cat > /tmp/custom_js.json << 'EOF'
     }
   ]
 }
-EOF
+```
 
-gtm variables create \
-  --name "CJS - Meta Pixel Content IDs" \
-  --type jsm \
-  --config "$(cat /tmp/custom_js.json)"
+```bash
+gtm variables create --name "CJS - Meta Pixel Content IDs" --type jsm --config-file content-ids.json
 ```
 
 ### Common Variable Patterns
 
 #### GA4 Ecommerce Variables
 ```bash
-# Create all ecommerce variables in parallel
-gtm variables create --name "DLV - ecommerce.currency" --type v --config '...' &
-gtm variables create --name "DLV - ecommerce.value" --type v --config '...' &
-gtm variables create --name "DLV - ecommerce.items" --type v --config '...' &
-gtm variables create --name "DLV - ecommerce.transaction_id" --type v --config '...' &
+# Save one JSON configuration per variable before running.
+gtm variables create --name "DLV - ecommerce.currency" --type v --config-file dlv-currency.json &
+gtm variables create --name "DLV - ecommerce.value" --type v --config-file dlv-value.json &
+gtm variables create --name "DLV - ecommerce.items" --type v --config-file dlv-items.json &
+gtm variables create --name "DLV - ecommerce.transaction_id" --type v --config-file dlv-transaction-id.json &
 wait
 ```
 
@@ -276,18 +285,15 @@ wait
 
 #### All Pages Trigger
 ```bash
-gtm triggers create \
-  --name "All Pages" \
-  --type PAGEVIEW \
-  --config '{}'
+gtm triggers create --name "All Pages" --type PAGEVIEW
 ```
 
 #### Custom Event Trigger
-```bash
-gtm triggers create \
-  --name "CE - purchase" \
-  --type CUSTOM_EVENT \
-  --config '{
+
+Save as `purchase.json`:
+
+```json
+{
     "customEventFilter": [
       {
         "type": "EQUALS",
@@ -305,27 +311,23 @@ gtm triggers create \
         ]
       }
     ]
-  }'
+}
+```
+
+```bash
+gtm triggers create --name "CE - purchase" --type CUSTOM_EVENT --config-file purchase.json
 ```
 
 **Critical**: Custom event triggers MUST use `{{_event}}` as `arg0`, not a custom variable.
 
 ### Bulk Creating GA4 Ecommerce Triggers
 ```bash
-# Create all GA4 ecommerce event triggers in parallel
+# Save one JSON configuration per event, using purchase.json above as the pattern.
 for event in view_item add_to_cart begin_checkout purchase add_payment_info; do
   gtm triggers create \
     --name "CE - ${event}" \
     --type CUSTOM_EVENT \
-    --config "{
-      \"customEventFilter\": [{
-        \"type\": \"EQUALS\",
-        \"parameter\": [
-          {\"type\": \"TEMPLATE\", \"key\": \"arg0\", \"value\": \"{{_event}}\"},
-          {\"type\": \"TEMPLATE\", \"key\": \"arg1\", \"value\": \"${event}\"}
-        ]
-      }]
-    }" &
+    --config-file "${event}.json" &
 done
 wait
 ```
@@ -345,12 +347,11 @@ wait
 ### Creating Tags
 
 #### Custom HTML Tag
-```bash
-gtm tags create \
-  --name "Custom Pixel" \
-  --type html \
-  --firing-trigger-id 20 \
-  --config '{
+
+Save as `custom-pixel.json`:
+
+```json
+{
     "parameter": [
       {
         "type": "TEMPLATE",
@@ -363,7 +364,11 @@ gtm tags create \
         "value": "false"
       }
     ]
-  }'
+}
+```
+
+```bash
+gtm tags create --name "Custom Pixel" --type html --firing-trigger-id 20 --config-file custom-pixel.json
 ```
 
 #### Custom Template Tag (CRITICAL)
@@ -377,15 +382,12 @@ gtm templates list
 # Output example:
 # Template ID: 26
 # Name: Facebook Pixel
+```
 
-# Step 2: Create tag using cvt_{containerId}_{templateId}
-# Format: cvt_240161374_26 (where 240161374 is container ID, 26 is template ID)
+Save as `meta-pixel-base.json`:
 
-gtm tags create \
-  --name "Meta Pixel - Base" \
-  --type "cvt_240161374_26" \
-  --firing-trigger-id 20 \
-  --config '{
+```json
+{
     "parameter": [
       {
         "type": "TEMPLATE",
@@ -408,7 +410,13 @@ gtm tags create \
         "value": "PageView"
       }
     ]
-  }'
+}
+```
+
+```bash
+# Step 2: Create tag using cvt_{containerId}_{templateId}.
+# Here, 240161374 is the container ID and 26 is the template ID.
+gtm tags create --name "Meta Pixel - Base" --type cvt_240161374_26 --firing-trigger-id 20 --config-file meta-pixel-base.json
 ```
 
 **How to Discover Template Type Format**:
@@ -425,7 +433,7 @@ gtm tags create \
   --name "Multi-Trigger Tag" \
   --type html \
   --firing-trigger-id 20,21,22 \
-  --config '{...}'
+  --config-file custom-pixel.json
 ```
 
 #### Blocking Triggers
@@ -435,7 +443,7 @@ gtm tags create \
   --type html \
   --firing-trigger-id 20 \
   --blocking-trigger-id 25 \
-  --config '{...}'
+  --config-file custom-pixel.json
 ```
 
 #### Delete Tags
@@ -456,13 +464,10 @@ gtm tags delete --tag-id 27 --force
 #### From File
 ```bash
 # Download template file
-curl -s "https://raw.githubusercontent.com/facebookarchive/GoogleTagManager-WebTemplate-For-FacebookPixel/refs/heads/main/template.tpl" \
-  -o /tmp/template.tpl
+curl -fsSL "https://raw.githubusercontent.com/facebookarchive/GoogleTagManager-WebTemplate-For-FacebookPixel/refs/heads/main/template.tpl" -o "Facebook Pixel.tpl"
 
-# Import into GTM
-gtm templates create \
-  --name "Facebook Pixel" \
-  --template-data "$(cat /tmp/template.tpl)"
+# Create a custom template from the local file (not a Gallery import).
+gtm templates create --name "Facebook Pixel" --template-data-file "Facebook Pixel.tpl"
 ```
 
 #### Listing Templates
@@ -490,7 +495,7 @@ gtm tags create \
   --name "Template Tag" \
   --type "$TAG_TYPE" \
   --firing-trigger-id 20 \
-  --config '{...}'
+  --config-file meta-pixel-base.json
 ```
 
 ---
@@ -512,16 +517,16 @@ gtm config set defaultWorkspaceId 2
 **Rule**: If operations are independent, run them in parallel.
 
 ```bash
-# Good: Parallel execution
-gtm variables create --name "Var1" --type c --config '{...}' &
-gtm variables create --name "Var2" --type c --config '{...}' &
-gtm variables create --name "Var3" --type c --config '{...}' &
+# Good: Parallel execution (prepare each configuration file first).
+gtm variables create --name "Var1" --type c --config-file var1.json &
+gtm variables create --name "Var2" --type c --config-file var2.json &
+gtm variables create --name "Var3" --type c --config-file var3.json &
 wait
 
 # Bad: Sequential execution
-gtm variables create --name "Var1" --type c --config '{...}'
-gtm variables create --name "Var2" --type c --config '{...}'
-gtm variables create --name "Var3" --type c --config '{...}'
+gtm variables create --name "Var1" --type c --config-file var1.json
+gtm variables create --name "Var2" --type c --config-file var2.json
+gtm variables create --name "Var3" --type c --config-file var3.json
 ```
 
 **When NOT to parallelize**:
@@ -541,27 +546,15 @@ gtm tags get --tag-id 27 -o json | jq -r '.type'
 
 Use loops and parallel execution:
 ```bash
-# Create multiple similar triggers
+# Create multiple similar triggers from previously saved event configuration files.
 events=("view_item" "add_to_cart" "begin_checkout" "purchase")
 for event in "${events[@]}"; do
   gtm triggers create \
     --name "CE - ${event}" \
     --type CUSTOM_EVENT \
-    --config "{...}" &
+    --config-file "${event}.json" &
 done
 wait
-```
-
-### 5. Use Heredocs for Complex JSON
-```bash
-# Avoid escaping nightmares
-cat > /tmp/config.json << 'EOF'
-{
-  "parameter": [...]
-}
-EOF
-
-gtm tags create --name "Tag" --type html --config "$(cat /tmp/config.json)"
 ```
 
 ---
@@ -629,17 +622,8 @@ gtm tags create --firing-trigger-id CORRECT_ID ...
 ```
 
 #### 5. "Bad escaped character in JSON"
-**Problem**: Improper JSON escaping in command line
-**Solution**: Use heredoc or temp file
-
-```bash
-# Instead of inline JSON with escaping issues
-cat > /tmp/config.json << 'EOF'
-{"parameter": [...]}
-EOF
-
-gtm tags create --config "$(cat /tmp/config.json)"
-```
+**Problem**: The shell changed quotes or backslashes in inline JSON.
+**Solution**: Write valid JSON to a UTF-8 file and pass `--config-file path/to/config.json`. Do not substitute the file contents back into the command line.
 
 ### Debugging Workflow
 
@@ -650,8 +634,8 @@ gtm config get
 # 2. List existing resources to understand structure
 gtm tags get --tag-id WORKING_TAG_ID -o json
 
-# 3. Test with simple example first
-gtm variables create --name "Test" --type c --config '{"parameter":[{"type":"TEMPLATE","key":"value","value":"test"}]}'
+# 3. Test with the pixel-id.json example above
+gtm variables create --name "Test" --type c --config-file pixel-id.json
 
 # 4. Check output format
 gtm tags list -o json | jq '.'
@@ -666,6 +650,19 @@ gtm triggers list | grep "Trigger ID"
 
 ### Example 1: GA4 Ecommerce Setup with Meta Pixel
 
+Save `pixel-id.json` and the `dlv-*.json` files as described under Variables. Save a configuration file for each custom event as described under Triggers. Start with `meta-pixel-base.json` from the custom template tag example. To enable data layer mapping and advanced matching, add `enableDataLayerMapping` and `enableEdvancedMatching` as BOOLEAN parameters with value `"true"`. Save the following as `meta-pixel-event.json`:
+
+```json
+{
+  "parameter": [
+    {"type": "TEMPLATE", "key": "pixelIds", "value": "{{Meta Pixel ID}}"},
+    {"type": "TEMPLATE", "key": "inheritEventName", "value": "inherit"},
+    {"type": "BOOLEAN", "key": "enableDataLayerMapping", "value": "true"},
+    {"type": "BOOLEAN", "key": "enableEdvancedMatching", "value": "true"}
+  ]
+}
+```
+
 ```bash
 #!/bin/bash
 
@@ -674,27 +671,18 @@ gtm config set defaultAccountId 2596355618
 gtm config set defaultContainerId 240161374
 gtm config set defaultWorkspaceId 2
 
-# 2. Create constant variable for Pixel ID
-gtm variables create \
-  --name "Meta Pixel ID" \
-  --type c \
-  --config '{
-    "parameter": [{
-      "type": "TEMPLATE",
-      "key": "value",
-      "value": "YOUR_PIXEL_ID"
-    }]
-  }'
+# 2. Create constant variable for Pixel ID (set the actual ID in pixel-id.json)
+gtm variables create --name "Meta Pixel ID" --type c --config-file pixel-id.json
 
 # 3. Create data layer variables in parallel
 gtm variables create --name "DLV - ecommerce.currency" --type v \
-  --config '{"parameter":[{"type":"INTEGER","key":"dataLayerVersion","value":"2"},{"type":"BOOLEAN","key":"setDefaultValue","value":"false"},{"type":"TEMPLATE","key":"name","value":"ecommerce.currency"}]}' &
+  --config-file dlv-currency.json &
 
 gtm variables create --name "DLV - ecommerce.value" --type v \
-  --config '{"parameter":[{"type":"INTEGER","key":"dataLayerVersion","value":"2"},{"type":"BOOLEAN","key":"setDefaultValue","value":"false"},{"type":"TEMPLATE","key":"name","value":"ecommerce.value"}]}' &
+  --config-file dlv-value.json &
 
 gtm variables create --name "DLV - ecommerce.items" --type v \
-  --config '{"parameter":[{"type":"INTEGER","key":"dataLayerVersion","value":"2"},{"type":"BOOLEAN","key":"setDefaultValue","value":"false"},{"type":"TEMPLATE","key":"name","value":"ecommerce.items"}]}' &
+  --config-file dlv-items.json &
 
 wait
 
@@ -703,17 +691,17 @@ for event in view_item add_to_cart begin_checkout purchase; do
   gtm triggers create \
     --name "CE - ${event}" \
     --type CUSTOM_EVENT \
-    --config "{\"customEventFilter\":[{\"type\":\"EQUALS\",\"parameter\":[{\"type\":\"TEMPLATE\",\"key\":\"arg0\",\"value\":\"{{_event}}\"},{\"type\":\"TEMPLATE\",\"key\":\"arg1\",\"value\":\"${event}\"}]}]}" &
+    --config-file "${event}.json" &
 done
 
 # Create PageView trigger
-gtm triggers create --name "All Pages" --type PAGEVIEW --config '{}' &
+gtm triggers create --name "All Pages" --type PAGEVIEW &
 
 wait
 
 # 5. Import Meta Pixel template
-curl -s "https://raw.githubusercontent.com/facebookarchive/GoogleTagManager-WebTemplate-For-FacebookPixel/refs/heads/main/template.tpl" -o /tmp/fb_template.tpl
-gtm templates create --name "Facebook Pixel" --template-data "$(cat /tmp/fb_template.tpl)"
+curl -fsSL "https://raw.githubusercontent.com/facebookarchive/GoogleTagManager-WebTemplate-For-FacebookPixel/refs/heads/main/template.tpl" -o "Facebook Pixel.tpl"
+gtm templates create --name "Facebook Pixel" --template-data-file "Facebook Pixel.tpl"
 
 # 6. Get template ID and create tag type
 TEMPLATE_ID=$(gtm templates list -o json | jq -r '.[0].templateId')
@@ -727,50 +715,25 @@ ADD_TO_CART_ID=$(gtm triggers list -o json | jq -r '.[] | select(.name=="CE - ad
 BEGIN_CHECKOUT_ID=$(gtm triggers list -o json | jq -r '.[] | select(.name=="CE - begin_checkout") | .triggerId')
 PURCHASE_ID=$(gtm triggers list -o json | jq -r '.[] | select(.name=="CE - purchase") | .triggerId')
 
-# 8. Create base config
-cat > /tmp/meta_base_config.json << 'EOF'
-{
-  "parameter": [
-    {"type": "TEMPLATE", "key": "pixelIds", "value": "{{Meta Pixel ID}}"},
-    {"type": "TEMPLATE", "key": "inheritEventName", "value": "override"},
-    {"type": "TEMPLATE", "key": "eventName", "value": "standard"},
-    {"type": "TEMPLATE", "key": "eventNameStandard", "value": "PageView"},
-    {"type": "BOOLEAN", "key": "enableDataLayerMapping", "value": "true"},
-    {"type": "BOOLEAN", "key": "enableEdvancedMatching", "value": "true"}
-  ]
-}
-EOF
-
-cat > /tmp/meta_event_config.json << 'EOF'
-{
-  "parameter": [
-    {"type": "TEMPLATE", "key": "pixelIds", "value": "{{Meta Pixel ID}}"},
-    {"type": "TEMPLATE", "key": "inheritEventName", "value": "inherit"},
-    {"type": "BOOLEAN", "key": "enableDataLayerMapping", "value": "true"},
-    {"type": "BOOLEAN", "key": "enableEdvancedMatching", "value": "true"}
-  ]
-}
-EOF
-
-# 9. Create tags
+# 8. Create tags from the saved configurations
 gtm tags create \
   --name "Meta Pixel - Base (PageView)" \
   --type "$TAG_TYPE" \
   --firing-trigger-id "$ALL_PAGES_ID" \
-  --config "$(cat /tmp/meta_base_config.json)"
+  --config-file meta-pixel-base.json
 
 # Create event tags in parallel
 gtm tags create --name "Meta Pixel - ViewContent" --type "$TAG_TYPE" \
-  --firing-trigger-id "$VIEW_ITEM_ID" --config "$(cat /tmp/meta_event_config.json)" &
+  --firing-trigger-id "$VIEW_ITEM_ID" --config-file meta-pixel-event.json &
 
 gtm tags create --name "Meta Pixel - AddToCart" --type "$TAG_TYPE" \
-  --firing-trigger-id "$ADD_TO_CART_ID" --config "$(cat /tmp/meta_event_config.json)" &
+  --firing-trigger-id "$ADD_TO_CART_ID" --config-file meta-pixel-event.json &
 
 gtm tags create --name "Meta Pixel - InitiateCheckout" --type "$TAG_TYPE" \
-  --firing-trigger-id "$BEGIN_CHECKOUT_ID" --config "$(cat /tmp/meta_event_config.json)" &
+  --firing-trigger-id "$BEGIN_CHECKOUT_ID" --config-file meta-pixel-event.json &
 
 gtm tags create --name "Meta Pixel - Purchase" --type "$TAG_TYPE" \
-  --firing-trigger-id "$PURCHASE_ID" --config "$(cat /tmp/meta_event_config.json)" &
+  --firing-trigger-id "$PURCHASE_ID" --config-file meta-pixel-event.json &
 
 wait
 
@@ -790,7 +753,7 @@ gtm tags get --tag-id $SOURCE_TAG_ID -o json > /tmp/source_tag.json
 
 # 2. Extract type and parameters
 TAG_TYPE=$(jq -r '.type' /tmp/source_tag.json)
-jq '.parameter' /tmp/source_tag.json > /tmp/tag_config.json
+jq '{parameter: .parameter}' /tmp/source_tag.json > /tmp/tag_config.json
 
 # 3. Create new tag with same config, different trigger
 NEW_TRIGGER_ID=30
@@ -799,7 +762,7 @@ gtm tags create \
   --name "Cloned Tag" \
   --type "$TAG_TYPE" \
   --firing-trigger-id "$NEW_TRIGGER_ID" \
-  --config "$(cat /tmp/tag_config.json | jq '{parameter: .}')"
+  --config-file /tmp/tag_config.json
 
 echo "✓ Tag cloned successfully"
 ```
@@ -867,7 +830,7 @@ fi
 ### 4. Handle Errors Gracefully
 ```bash
 # Check exit codes
-if gtm tags create --name "Test" --type html --config '{...}' 2>/tmp/error.log; then
+if gtm tags create --name "Test" --type html --config-file custom-pixel.json 2>/tmp/error.log; then
   echo "Success"
 else
   echo "Failed:"
@@ -885,8 +848,8 @@ fi
 
 ### 6. Test with Simple Cases First
 ```bash
-# Create one example before bulk operations
-gtm variables create --name "Test Var" --type c --config '{"parameter":[{"type":"TEMPLATE","key":"value","value":"test"}]}'
+# Create one example with the pixel-id.json file before bulk operations
+gtm variables create --name "Test Var" --type c --config-file pixel-id.json
 
 # If successful, proceed with bulk
 ```
@@ -926,10 +889,10 @@ gtm triggers get --trigger-id ID -o json
 gtm variables get --variable-id ID -o json
 
 # Create
-gtm variables create --name "Name" --type TYPE --config '{...}'
-gtm triggers create --name "Name" --type TYPE --config '{...}'
-gtm tags create --name "Name" --type TYPE --firing-trigger-id ID --config '{...}'
-gtm templates create --name "Name" --template-data "$(cat file.tpl)"
+gtm variables create --name "Name" --type TYPE --config-file variable.json
+gtm triggers create --name "Name" --type TYPE --config-file trigger.json
+gtm tags create --name "Name" --type TYPE --firing-trigger-id ID --config-file tag.json
+gtm templates create --name "Name" --template-data-file template.tpl
 
 # Delete
 gtm tags delete --tag-id ID --force
@@ -943,7 +906,7 @@ gtm variables delete --variable-id ID --force
 command1 & command2 & command3 & wait
 
 # JSON config from file
---config "$(cat /tmp/config.json)"
+--config-file config.json
 
 # Custom template tag type
 --type "cvt_{containerId}_{templateId}"

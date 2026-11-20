@@ -6,6 +6,7 @@ import { Command } from "@cliffy/command";
 import { getTagManagerClient, paginateAll, Client } from "../api/mod.ts";
 import { getEffectiveValue } from "../config/store.ts";
 import { handleError, output, OutputFormat, success, requireOptions } from "../utils/mod.ts";
+import { readJsonPayload } from "../utils/payload.ts";
 
 export const clientsCommand = new Command()
   .name("clients")
@@ -84,11 +85,13 @@ export const clientsCommand = new Command()
   .option("-n, --name <name:string>", "Client name", { required: true })
   .option("--type <type:string>", "Client type", { required: true })
   .option("--config <config:string>", "Client configuration as JSON")
+  .option("--config-file <path:string>", "Read client configuration from a UTF-8 JSON file")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -101,8 +104,7 @@ export const clientsCommand = new Command()
         type: options.type,
       };
 
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 
@@ -126,12 +128,14 @@ export const clientsCommand = new Command()
   .option("--client-id <id:string>", "GTM Client ID", { required: true })
   .option("-n, --name <name:string>", "New client name")
   .option("--config <config:string>", "Client configuration as JSON")
+  .option("--config-file <path:string>", "Read client configuration from a UTF-8 JSON file")
   .option("--fingerprint <fingerprint:string>", "Client fingerprint")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -150,8 +154,7 @@ export const clientsCommand = new Command()
 
       const requestBody: Record<string, unknown> = {};
       if (options.name) requestBody.name = options.name;
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 

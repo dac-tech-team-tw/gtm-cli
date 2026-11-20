@@ -6,6 +6,7 @@ import { Command } from "@cliffy/command";
 import { getTagManagerClient, paginateAll, UserPermission } from "../api/mod.ts";
 import { getEffectiveValue } from "../config/store.ts";
 import { handleError, output, OutputFormat, success, requireOptions } from "../utils/mod.ts";
+import { readJsonPayload } from "../utils/payload.ts";
 
 export const userPermissionsCommand = new Command()
   .name("user-permissions")
@@ -75,11 +76,17 @@ export const userPermissionsCommand = new Command()
   .option("--email <email:string>", "User email address", { required: true })
   .option("--account-access <access:string>", "Account access level (noAccess, read, admin)")
   .option("--container-access <access:string>", "Container access as JSON array")
+  .option("--container-access-file <path:string>", "Read container access from a UTF-8 JSON file")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const containerAccess = await readJsonPayload(
+        "--container-access",
+        options.containerAccess,
+        options.containerAccessFile,
+      );
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       requireOptions({ accountId }, ["accountId"]);
 
@@ -93,8 +100,8 @@ export const userPermissionsCommand = new Command()
         requestBody.accountAccess = { permission: options.accountAccess };
       }
 
-      if (options.containerAccess) {
-        requestBody.containerAccess = JSON.parse(options.containerAccess);
+      if (containerAccess !== undefined) {
+        requestBody.containerAccess = containerAccess;
       }
 
       const response = await tagmanager.accounts.user_permissions.create({
@@ -115,11 +122,17 @@ export const userPermissionsCommand = new Command()
   .option("--permission-id <id:string>", "User Permission ID", { required: true })
   .option("--account-access <access:string>", "Account access level (noAccess, read, admin)")
   .option("--container-access <access:string>", "Container access as JSON array")
+  .option("--container-access-file <path:string>", "Read container access from a UTF-8 JSON file")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const containerAccess = await readJsonPayload(
+        "--container-access",
+        options.containerAccess,
+        options.containerAccessFile,
+      );
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       requireOptions({ accountId }, ["accountId"]);
 
@@ -131,8 +144,8 @@ export const userPermissionsCommand = new Command()
         requestBody.accountAccess = { permission: options.accountAccess };
       }
 
-      if (options.containerAccess) {
-        requestBody.containerAccess = JSON.parse(options.containerAccess);
+      if (containerAccess !== undefined) {
+        requestBody.containerAccess = containerAccess;
       }
 
       const response = await tagmanager.accounts.user_permissions.update({

@@ -6,6 +6,7 @@ import { Command } from "@cliffy/command";
 import { getTagManagerClient, paginateAll, CustomTemplate } from "../api/mod.ts";
 import { getEffectiveValue } from "../config/store.ts";
 import { handleError, output, OutputFormat, success, requireOptions } from "../utils/mod.ts";
+import { readJsonPayload, readPayload } from "../utils/payload.ts";
 
 export const templatesCommand = new Command()
   .name("templates")
@@ -83,12 +84,20 @@ export const templatesCommand = new Command()
   .option("-w, --workspace-id <id:string>", "GTM Workspace ID")
   .option("-n, --name <name:string>", "Template name", { required: true })
   .option("--template-data <data:string>", "Template data (sandboxed JavaScript)")
+  .option("--template-data-file <path:string>", "Read raw template data from a UTF-8 file")
   .option("--config <config:string>", "Template configuration as JSON")
+  .option("--config-file <path:string>", "Read template configuration from a UTF-8 JSON file")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const templateData = await readPayload(
+        "--template-data",
+        options.templateData,
+        options.templateDataFile,
+      );
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -100,12 +109,11 @@ export const templatesCommand = new Command()
         name: options.name,
       };
 
-      if (options.templateData) {
-        requestBody.templateData = options.templateData;
+      if (templateData !== undefined) {
+        requestBody.templateData = templateData;
       }
 
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 
@@ -129,13 +137,21 @@ export const templatesCommand = new Command()
   .option("--template-id <id:string>", "GTM Template ID", { required: true })
   .option("-n, --name <name:string>", "New template name")
   .option("--template-data <data:string>", "New template data")
+  .option("--template-data-file <path:string>", "Read raw template data from a UTF-8 file")
   .option("--config <config:string>", "Template configuration as JSON")
+  .option("--config-file <path:string>", "Read template configuration from a UTF-8 JSON file")
   .option("--fingerprint <fingerprint:string>", "Template fingerprint")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const templateData = await readPayload(
+        "--template-data",
+        options.templateData,
+        options.templateDataFile,
+      );
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -154,9 +170,8 @@ export const templatesCommand = new Command()
 
       const requestBody: Record<string, unknown> = {};
       if (options.name) requestBody.name = options.name;
-      if (options.templateData) requestBody.templateData = options.templateData;
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (templateData !== undefined) requestBody.templateData = templateData;
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 
