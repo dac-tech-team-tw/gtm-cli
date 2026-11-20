@@ -186,6 +186,10 @@ Example:
   const npmPackage = JSON.parse(await Deno.readTextFile(NPM_PACKAGE_PATH));
   denoJson.version = newVersion;
   npmPackage.version = newVersion;
+  // Platform packages are published with the same version as the main package.
+  for (const name of Object.keys(npmPackage.optionalDependencies ?? {})) {
+    npmPackage.optionalDependencies[name] = newVersion;
+  }
   await Deno.writeTextFile(DENO_JSON_PATH, JSON.stringify(denoJson, null, 2) + "\n");
   await Deno.writeTextFile(NPM_PACKAGE_PATH, JSON.stringify(npmPackage, null, 2) + "\n");
 
@@ -213,7 +217,7 @@ Example:
   console.log("GitHub Actions will now:");
   console.log("  1. Build binaries for Windows, macOS and Linux");
   console.log("  2. Create a GitHub release");
-  console.log("  3. Publish to npm as @dac-tech-team-tw/gtm-cli");
+  console.log("  3. Publish the platform packages, then @dac-tech-team-tw/gtm-cli, to npm");
   console.log("");
   console.log(`Check progress at: https://github.com/dac-tech-team-tw/gtm-cli/actions`);
 }

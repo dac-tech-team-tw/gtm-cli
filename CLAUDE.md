@@ -218,7 +218,7 @@ deno task release 2.0.0    # Set explicit version
 
 The script will:
 1. Check for uncommitted changes
-2. Update versions in `deno.json` and `npm/package.json`
+2. Update versions in `deno.json` and `npm/package.json` (including `optionalDependencies`)
 3. Commit the change
 4. Create a git tag
 5. Push to origin
@@ -229,10 +229,11 @@ GitHub Actions will:
 1. Build binaries for macOS (arm64 + x64), Linux (x64), and Windows (x64)
 2. Embed OAuth credentials from secrets
 3. Create GitHub Release with binaries attached
-4. Publish to npm as `@dac-tech-team-tw/gtm-cli` after the release assets are uploaded
+4. Publish the four platform packages, then `@dac-tech-team-tw/gtm-cli`, to npm
+5. Verify `npm install -g --ignore-scripts` on Linux and Windows
 
 ## npm Publishing
 
-The package is `@dac-tech-team-tw/gtm-cli`. Its installer downloads the matching GitHub Release binary; installation requires the package and release assets to have been published.
+The package is `@dac-tech-team-tw/gtm-cli`. Each platform binary ships in its own package (`@dac-tech-team-tw/gtm-cli-{darwin-arm64,darwin-x64,linux-x64,win32-x64}`) listed in the main package's `optionalDependencies`, pinned to the same version. There is no install script.
 
-See [README.md](README.md) for installation, initial npm scope ownership and trusted publishing setup. `npm/install.js` selects the release asset, and `npm/bin/gtm` runs it.
+See [README.md](README.md) for installation, initial npm scope ownership and trusted publishing setup. `scripts/npm-platform-packages.mjs` builds the platform packages from release binaries in CI, and `npm/bin/gtm` resolves and runs the installed one.

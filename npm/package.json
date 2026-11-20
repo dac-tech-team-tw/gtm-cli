@@ -25,11 +25,13 @@
   },
   "files": [
     "bin",
-    "install.js",
     "README.md"
   ],
-  "scripts": {
-    "postinstall": "node install.js"
+  "optionalDependencies": {
+    "@dac-tech-team-tw/gtm-cli-darwin-arm64": "1.7.1",
+    "@dac-tech-team-tw/gtm-cli-darwin-x64": "1.7.1",
+    "@dac-tech-team-tw/gtm-cli-linux-x64": "1.7.1",
+    "@dac-tech-team-tw/gtm-cli-win32-x64": "1.7.1"
   },
   "engines": {
     "node": ">=16"
