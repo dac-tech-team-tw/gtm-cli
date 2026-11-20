@@ -4,7 +4,7 @@ Command-line interface for Google Tag Manager. See the [project documentation](h
 
 ## Installation
 
-Node.js 16 or newer and npm are required. Supported platforms are Windows x64, macOS x64 and arm64, and Linux x64. Installing downloads the matching binary for the package version from the project's GitHub Releases, so network access to GitHub and its release asset host is required. npm lifecycle scripts must be enabled for the automatic download; if scripts were disabled, the wrapper attempts the download on first use.
+Node.js 16 or newer and npm are required. Supported platforms are Windows x64, macOS x64 and arm64, and Linux x64. The binary for each platform ships in an `@dac-tech-team-tw/gtm-cli-<platform>` package listed in `optionalDependencies`; npm installs only the one matching your machine. No install scripts run and nothing is downloaded from GitHub. Do not install with `--omit=optional`.
 
 ```bash
 npm install -g @dac-tech-team-tw/gtm-cli

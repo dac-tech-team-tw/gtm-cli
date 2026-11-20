@@ -78,7 +78,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          node -e 'const d = require("./deno.json").version; const n = require("./npm/package.json").version; if (d !== n || process.env.RELEASE_TAG !== `v${d}`) { console.error(`Version mismatch: tag=${process.env.RELEASE_TAG}, deno=${d}, npm=${n}`); process.exit(1); }'
+          node -e 'const d = require("./deno.json").version; const p = require("./npm/package.json"); const n = p.version; if (d !== n || process.env.RELEASE_TAG !== `v${d}`) { console.error(`Version mismatch: tag=${process.env.RELEASE_TAG}, deno=${d}, npm=${n}`); process.exit(1); } for (const [k, v] of Object.entries(p.optionalDependencies)) if (v !== n) { console.error(`Version mismatch: ${k}=${v}, npm=${n}`); process.exit(1); }'
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8
@@ -102,7 +102,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
-    name: Publish npm package
+    name: Publish npm packages
     needs: release
     runs-on: ubuntu-latest
     permissions:
@@ -121,9 +121,60 @@ jobs:
       - name: Update npm for trusted publishing
         run: npm install --global npm@latest
 
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Build platform packages
+        run: |
+          mkdir -p binaries
+          find artifacts -type f -exec mv {} binaries/ \;
+          node scripts/npm-platform-packages.mjs binaries dist/npm
+
       - name: Include full project README
         run: cp README.md npm/README.md
 
+      # Platform packages go first so the main package never points at a
+      # missing version. Already-published versions are skipped so a failed
+      # run can be re-run.
       - name: Publish
-        working-directory: npm
-        run: npm publish --access public
+        run: |
+          publish() {
+            local name version
+            name=$(node -p "require('./$1/package.json').name")
+            version=$(node -p "require('./$1/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version already published, skipping"
+            else
+              (cd "$1" && npm publish --access public)
+            fi
+          }
+          for dir in dist/npm/*/; do publish "${dir%/}"; done
+          publish npm
+
+  verify-npm:
+    name: Verify npm install (${{ matrix.os }})
+    needs: publish-npm
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install without scripts and run
+        shell: bash
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          pkg="@dac-tech-team-tw/gtm-cli@${VERSION#v}"
+          # The registry can take a moment to serve a new version.
+          for _ in 1 2 3 4 5 6; do
+            npm install -g --ignore-scripts "$pkg" && break
+            sleep 20
+          done
+          gtm --version

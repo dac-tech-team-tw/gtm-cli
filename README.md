@@ -4,7 +4,7 @@ GTM CLI 是以 Deno 和 Cliffy 建立的 Google Tag Manager 命令列工具。�
 
 ## 安裝
 
-預先編譯的發行檔支援 macOS Apple Silicon／Intel、Linux x64 與 Windows x64。安裝腳本和 npm 安裝都需要本分支已有相應的 GitHub Release 資產。
+預先編譯的發行檔支援 macOS Apple Silicon／Intel、Linux x64 與 Windows x64。安裝腳本需要本分支已有相應的 GitHub Release 資產。
 
 ### macOS / Linux
 
@@ -24,7 +24,7 @@ irm https://raw.githubusercontent.com/dac-tech-team-tw/gtm-cli/main/install.ps1 
 
 ### npm
 
-`@dac-tech-team-tw/gtm-cli` 已發布至 npm。安裝時會下載套件版本對應的 GitHub Release 二進位檔，因此該版本的 Release 資產必須存在。
+`@dac-tech-team-tw/gtm-cli` 已發布至 npm。各平台的執行檔放在 `@dac-tech-team-tw/gtm-cli-<平台>` 子套件，主套件以 `optionalDependencies` 引用，npm 只會安裝符合本機的那一個。安裝時不執行安裝腳本，也不連線 GitHub；請勿使用 `--omit=optional` 安裝。
 
 ```bash
 npm install -g @dac-tech-team-tw/gtm-cli
@@ -178,9 +178,20 @@ deno task release major
 deno task release 2.0.0
 ```
 
-腳本會拉取 `origin/main`、同步更新 `deno.json` 與 `npm/package.json` 的版本、執行型別檢查、建立提交與 `v` 標籤，並推送分支及標籤。標籤會觸發 `.github/workflows/release.yml`，建置各平台二進位檔、建立 GitHub Release，並在資產上傳後透過 OIDC 發布 npm 套件。若要讓發行檔支援內建 OAuth，須先在 GitHub repository secrets 設定 `GOOGLE_CLIENT_ID` 與 `GOOGLE_CLIENT_SECRET`；請使用本分支自己的 Google OAuth 用戶端。
+腳本會拉取 `origin/main`、同步更新 `deno.json` 與 `npm/package.json` 的版本、執行型別檢查、建立提交與 `v` 標籤，並推送分支及標籤。標籤會觸發 `.github/workflows/release.yml`，建置各平台二進位檔、建立 GitHub Release，再透過 OIDC 先發布四個平台子套件（由 `scripts/npm-platform-packages.mjs` 產生）、後發布主套件，最後在 Linux 與 Windows 以 `npm install -g --ignore-scripts` 驗證安裝。已發布的版本會跳過，失敗時可直接重跑工作流程。若要讓發行檔支援內建 OAuth，須先在 GitHub repository secrets 設定 `GOOGLE_CLIENT_ID` 與 `GOOGLE_CLIENT_SECRET`；請使用本分支自己的 Google OAuth 用戶端。
 
-npm 發布前，維護者須擁有 `@dac-tech-team-tw` scope 的發布權限。在 npm 套件設定中新增 GitHub Actions trusted publisher，指定擁有者 `dac-tech-team-tw`、儲存庫 `gtm-cli` 與工作流程檔名 `release.yml`，並允許直接執行 `npm publish`；若工作流程使用受保護環境，也須指定相符的環境。新設定須在兩天內成功發布一次，否則會過期。OIDC 發布需要工作流程具備 `id-token: write` 權限及支援 trusted publishing 的 npm 版本。發布前亦須確認 npm 套件版本與 GitHub Release 資產相符。
+npm 發布前，維護者須擁有 `@dac-tech-team-tw` scope 的發布權限。主套件與四個平台子套件（`gtm-cli-darwin-arm64`、`gtm-cli-darwin-x64`、`gtm-cli-linux-x64`、`gtm-cli-win32-x64`）都要各自設定 trusted publisher。trusted publisher 只能設定在已存在的套件上，因此新的子套件須先由維護者以 `npm login` 手動發布一次，再到各套件設定中新增 GitHub Actions trusted publisher，指定擁有者 `dac-tech-team-tw`、儲存庫 `gtm-cli` 與工作流程檔名 `release.yml`，並允許直接執行 `npm publish`；若工作流程使用受保護環境，也須指定相符的環境。新設定須在兩天內成功發布一次，否則會過期。OIDC 發布需要工作流程具備 `id-token: write` 權限及支援 trusted publishing 的 npm 版本。發布前亦須確認 npm 套件版本與 GitHub Release 資產相符。
+
+平台子套件第一次發布前，可先發布不含執行檔的 `0.0.0` 佔位版本，讓套件存在後再設定 trusted publisher。主套件只依賴與自己相同的版本，不會裝到佔位版本：
+
+```bash
+npm login
+for p in darwin-arm64 darwin-x64 linux-x64 win32-x64; do
+  d=$(mktemp -d)
+  printf '{"name":"@dac-tech-team-tw/gtm-cli-%s","version":"0.0.0","license":"MIT"}\n' "$p" > "$d/package.json"
+  (cd "$d" && npm publish --access public)
+done
+```
 
 ## 授權與致謝
 
