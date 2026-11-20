@@ -25,7 +25,7 @@ function binaryPath() {
   } catch {
     throw new Error(
       `The platform package ${pkg} is not installed.\n` +
-        "It is an optional dependency; reinstall without --omit=optional or --no-optional:\n" +
+        "Reinstall to restore it (do not use --omit=optional or --no-optional):\n" +
         `  npm install -g ${name}`,
     );
   }

@@ -46,6 +46,7 @@ for (const [platform, asset] of Object.entries(ASSETS)) {
   fs.mkdirSync(path.join(dir, "bin"), { recursive: true });
   fs.copyFileSync(path.join(binariesDir, asset), path.join(dir, "bin", binary));
   fs.chmodSync(path.join(dir, "bin", binary), 0o755);
+  fs.copyFileSync(path.join(root, "npm/LICENSE"), path.join(dir, "LICENSE"));
 
   const pkg = {
     name,
