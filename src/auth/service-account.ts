@@ -4,7 +4,7 @@
  * Supports service account key file (--service-account flag or GOOGLE_APPLICATION_CREDENTIALS env)
  */
 
-import { google } from "googleapis";
+import { GoogleAuth } from "google-auth-library";
 import { OAUTH_SCOPES } from "../config/constants.ts";
 import { ensureDir } from "@std/fs";
 import { getConfigDir } from "../config/constants.ts";
@@ -113,7 +113,7 @@ export async function loginWithServiceAccount(
   const key = await validateServiceAccountKey(keyPath);
 
   // Test authentication by creating a client
-  const auth = new google.auth.GoogleAuth({
+  const auth = new GoogleAuth({
     keyFile: keyPath,
     scopes: OAUTH_SCOPES,
   });
@@ -144,7 +144,7 @@ export async function getServiceAccountAccessToken(): Promise<{
   const envKeyPath = Deno.env.get("GOOGLE_APPLICATION_CREDENTIALS");
   if (envKeyPath) {
     await validateServiceAccountKey(envKeyPath);
-    const auth = new google.auth.GoogleAuth({
+    const auth = new GoogleAuth({
       keyFile: envKeyPath,
       scopes: OAUTH_SCOPES,
     });
@@ -169,7 +169,7 @@ export async function getServiceAccountAccessToken(): Promise<{
       throw new Error("Service account path not configured");
     }
     await validateServiceAccountKey(authMethod.serviceAccountPath);
-    const auth = new google.auth.GoogleAuth({
+    const auth = new GoogleAuth({
       keyFile: authMethod.serviceAccountPath,
       scopes: OAUTH_SCOPES,
     });

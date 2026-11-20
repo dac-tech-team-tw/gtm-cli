@@ -13,14 +13,15 @@
 ### Runtime Environment
 - **Deno** - TypeScript/JavaScript runtime
 - **Cliffy** - CLI framework (command parsing, prompts, tables)
-- **Google APIs** - Official googleapis npm package for GTM API
+- **Google APIs** - Official `@googleapis/tagmanager` and `google-auth-library` npm packages
 
 ### Key Technologies
 - `@cliffy/command` - Command-line parsing and subcommands
 - `@cliffy/prompt` - Interactive prompts
 - `@cliffy/table` - Table output formatting
 - `@cliffy/ansi` - Colored terminal output
-- `googleapis` - Google Tag Manager API v2 client
+- `@googleapis/tagmanager` - Google Tag Manager API v2 client
+- `google-auth-library` - Service account authentication
 
 ## Project Structure
 

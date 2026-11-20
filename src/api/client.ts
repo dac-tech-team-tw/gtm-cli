@@ -2,7 +2,7 @@
  * Google Tag Manager API client wrapper
  */
 
-import { google, type tagmanager_v2 } from "googleapis";
+import { tagmanager, type tagmanager_v2 } from "@googleapis/tagmanager";
 import { getAccessToken } from "../auth/oauth.ts";
 import { getServiceAccountAccessToken } from "../auth/service-account.ts";
 
@@ -45,7 +45,7 @@ export async function getTagManagerClient(): Promise<TagManager> {
       return cachedClient;
     }
     
-    cachedClient = google.tagmanager({
+    cachedClient = tagmanager({
       version: "v2",
       headers: {
         Authorization: `Bearer ${saToken.accessToken}`,
@@ -63,7 +63,7 @@ export async function getTagManagerClient(): Promise<TagManager> {
     return cachedClient;
   }
 
-  cachedClient = google.tagmanager({
+  cachedClient = tagmanager({
     version: "v2",
     headers: {
       Authorization: `Bearer ${accessToken}`,
