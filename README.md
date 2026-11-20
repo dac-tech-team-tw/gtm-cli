@@ -141,6 +141,10 @@ gtm versions publish --version-id 42
 
 其他指令群組包括 `environments`、`built-in-variables`、`clients`、`templates`、`transformations`、`zones`、`destinations`、`gtag-configs` 與 `user-permissions`。使用 `gtm <指令> --help` 查看操作；`gtm agent guide` 提供代理程式使用指南。許多清單或查詢指令接受 `--output json`、`table` 或 `compact`；`--quiet` 可減少非必要輸出，`--no-color` 可停用色彩。
 
+要傳 JSON 或 `.tpl` 範本時，建議先儲存成 UTF-8 檔，再用 `--config-file`、`--container-access-file` 或 `--template-data-file` 傳檔案路徑，避免 shell 引號和命令列長度限制。檔案旗標不可與對應的行內旗標同時使用。
+
+Windows PowerShell 5.1 寫檔請用 `Set-Content -Encoding UTF8`；預設的 `Set-Content` 和 `>` 可能產生非 UTF-8 檔案。
+
 ```bash
 gtm upgrade --check
 gtm upgrade

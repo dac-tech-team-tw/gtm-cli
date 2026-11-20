@@ -6,6 +6,7 @@ import { Command } from "@cliffy/command";
 import { getTagManagerClient, paginateAll, Tag } from "../api/mod.ts";
 import { getEffectiveValue } from "../config/store.ts";
 import { handleError, output, OutputFormat, success, requireOptions } from "../utils/mod.ts";
+import { readJsonPayload } from "../utils/payload.ts";
 
 export const tagsCommand = new Command()
   .name("tags")
@@ -84,6 +85,7 @@ export const tagsCommand = new Command()
   .option("-n, --name <name:string>", "Tag name", { required: true })
   .option("--type <type:string>", "Tag type", { required: true })
   .option("--config <config:string>", "Tag configuration as JSON")
+  .option("--config-file <path:string>", "Read tag configuration from a UTF-8 JSON file")
   .option("--firing-trigger-id <ids:string>", "Comma-separated firing trigger IDs")
   .option("--blocking-trigger-id <ids:string>", "Comma-separated blocking trigger IDs")
   .option("--paused", "Create tag in paused state", { default: false })
@@ -92,6 +94,7 @@ export const tagsCommand = new Command()
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -105,8 +108,7 @@ export const tagsCommand = new Command()
         paused: options.paused,
       };
 
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 
@@ -138,6 +140,7 @@ export const tagsCommand = new Command()
   .option("-t, --tag-id <id:string>", "GTM Tag ID", { required: true })
   .option("-n, --name <name:string>", "New tag name")
   .option("--config <config:string>", "Tag configuration as JSON (merged with existing)")
+  .option("--config-file <path:string>", "Read tag configuration from a UTF-8 JSON file (merged with existing)")
   .option("--firing-trigger-id <ids:string>", "Comma-separated firing trigger IDs")
   .option("--blocking-trigger-id <ids:string>", "Comma-separated blocking trigger IDs")
   .option("--paused <paused:boolean>", "Set paused state")
@@ -147,6 +150,7 @@ export const tagsCommand = new Command()
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -175,8 +179,7 @@ export const tagsCommand = new Command()
       if (options.paused !== undefined) {
         requestBody.paused = options.paused;
       }
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
       if (options.firingTriggerId) {

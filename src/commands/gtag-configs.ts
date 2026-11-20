@@ -6,6 +6,7 @@ import { Command } from "@cliffy/command";
 import { getTagManagerClient, paginateAll, GtagConfig } from "../api/mod.ts";
 import { getEffectiveValue } from "../config/store.ts";
 import { handleError, output, OutputFormat, success, requireOptions } from "../utils/mod.ts";
+import { readJsonPayload } from "../utils/payload.ts";
 
 export const gtagConfigsCommand = new Command()
   .name("gtag-configs")
@@ -83,11 +84,13 @@ export const gtagConfigsCommand = new Command()
   .option("-w, --workspace-id <id:string>", "GTM Workspace ID")
   .option("--type <type:string>", "Gtag config type", { required: true })
   .option("--config <config:string>", "Gtag configuration as JSON")
+  .option("--config-file <path:string>", "Read gtag configuration from a UTF-8 JSON file")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -99,8 +102,7 @@ export const gtagConfigsCommand = new Command()
         type: options.type,
       };
 
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 
@@ -123,12 +125,14 @@ export const gtagConfigsCommand = new Command()
   .option("-w, --workspace-id <id:string>", "GTM Workspace ID")
   .option("--gtag-config-id <id:string>", "GTM Gtag Config ID", { required: true })
   .option("--config <config:string>", "Gtag configuration as JSON")
+  .option("--config-file <path:string>", "Read gtag configuration from a UTF-8 JSON file")
   .option("--fingerprint <fingerprint:string>", "Config fingerprint")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -146,8 +150,7 @@ export const gtagConfigsCommand = new Command()
       }
 
       const requestBody: Record<string, unknown> = {};
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 

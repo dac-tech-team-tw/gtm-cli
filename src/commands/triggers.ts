@@ -6,6 +6,7 @@ import { Command } from "@cliffy/command";
 import { getTagManagerClient, paginateAll, Trigger } from "../api/mod.ts";
 import { getEffectiveValue } from "../config/store.ts";
 import { handleError, output, OutputFormat, success, requireOptions } from "../utils/mod.ts";
+import { readJsonPayload } from "../utils/payload.ts";
 
 export const triggersCommand = new Command()
   .name("triggers")
@@ -84,11 +85,13 @@ export const triggersCommand = new Command()
   .option("-n, --name <name:string>", "Trigger name", { required: true })
   .option("--type <type:string>", "Trigger type", { required: true })
   .option("--config <config:string>", "Trigger configuration as JSON")
+  .option("--config-file <path:string>", "Read trigger configuration from a UTF-8 JSON file")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -101,8 +104,7 @@ export const triggersCommand = new Command()
         type: options.type,
       };
 
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 
@@ -126,12 +128,14 @@ export const triggersCommand = new Command()
   .option("--trigger-id <id:string>", "GTM Trigger ID", { required: true })
   .option("-n, --name <name:string>", "New trigger name")
   .option("--config <config:string>", "Trigger configuration as JSON (merged with existing)")
+  .option("--config-file <path:string>", "Read trigger configuration from a UTF-8 JSON file (merged with existing)")
   .option("--fingerprint <fingerprint:string>", "Trigger fingerprint for concurrency control")
   .option("-o, --output <format:string>", "Output format (json, table, compact)", {
     default: "table",
   })
   .action(async (options) => {
     try {
+      const config = await readJsonPayload("--config", options.config, options.configFile);
       const accountId = await getEffectiveValue(options.accountId, "defaultAccountId");
       const containerId = await getEffectiveValue(options.containerId, "defaultContainerId");
       const workspaceId = await getEffectiveValue(options.workspaceId, "defaultWorkspaceId");
@@ -157,8 +161,7 @@ export const triggersCommand = new Command()
       if (options.name) {
         requestBody.name = options.name;
       }
-      if (options.config) {
-        const config = JSON.parse(options.config);
+      if (config !== undefined) {
         Object.assign(requestBody, config);
       }
 
