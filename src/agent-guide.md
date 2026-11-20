@@ -151,6 +151,8 @@ wait
 
 Write JSON to a UTF-8 file with your file-writing tool, then pass its path. This avoids shell escaping and command-line length limits. UTF-8 BOMs are accepted.
 
+In Windows PowerShell 5.1, use `Set-Content -Encoding UTF8` to write payload files. The default `Set-Content` encoding and `>` redirection can produce non-UTF-8 files.
+
 Use `--config-file` for resource configuration, `--container-access-file` for the JSON array of container permissions, and `--template-data-file` for raw `.tpl` content. Do not combine a file flag with its inline counterpart.
 
 Save as `currency.json`:
