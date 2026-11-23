@@ -1,6 +1,6 @@
 {
   "name": "@dac-tech-team-tw/gtm-cli",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Command-line interface for Google Tag Manager",
   "keywords": [
     "google-tag-manager",
@@ -28,10 +28,10 @@
     "README.md"
   ],
   "optionalDependencies": {
-    "@dac-tech-team-tw/gtm-cli-darwin-arm64": "1.7.2",
-    "@dac-tech-team-tw/gtm-cli-darwin-x64": "1.7.2",
-    "@dac-tech-team-tw/gtm-cli-linux-x64": "1.7.2",
-    "@dac-tech-team-tw/gtm-cli-win32-x64": "1.7.2"
+    "@dac-tech-team-tw/gtm-cli-darwin-arm64": "1.7.3",
+    "@dac-tech-team-tw/gtm-cli-darwin-x64": "1.7.3",
+    "@dac-tech-team-tw/gtm-cli-linux-x64": "1.7.3",
+    "@dac-tech-team-tw/gtm-cli-win32-x64": "1.7.3"
   },
   "engines": {
     "node": ">=16"

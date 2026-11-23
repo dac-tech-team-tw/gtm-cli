@@ -1,6 +1,6 @@
 {
   "name": "@dac-tech-team-tw/gtm-cli",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "exports": "./src/main.ts",
   "tasks": {
     "dev": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run --allow-sys --watch --env-file src/main.ts",
