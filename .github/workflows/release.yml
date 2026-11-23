@@ -171,10 +171,18 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
         run: |
-          pkg="@dac-tech-team-tw/gtm-cli@${VERSION#v}"
-          # The registry can take a moment to serve a new version.
-          for _ in 1 2 3 4 5 6; do
-            npm install -g --ignore-scripts "$pkg" && break
-            sleep 20
+          version="${VERSION#v}"
+          pkg="@dac-tech-team-tw/gtm-cli@$version"
+          # New tarballs can 404 for several minutes after publish, and npm
+          # silently skips an optional dependency it cannot download, so
+          # retry until the installed binary reports the released version.
+          for _ in $(seq 1 30); do
+            if npm install -g --ignore-scripts --prefer-online "$pkg" &&
+              gtm --version | grep -qF "$version"; then
+              gtm --version
+              exit 0
+            fi
+            sleep 30
           done
-          gtm --version
+          echo "::error::$pkg did not install a working binary within 15 minutes"
+          exit 1
