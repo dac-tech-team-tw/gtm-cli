@@ -3,15 +3,24 @@
  */
 
 export const NPM_UPGRADE_COMMAND = "npm i -g @dac-tech-team-tw/gtm-cli@latest";
+export const NPM_LOCAL_UPGRADE_HINT =
+  "(for a project-local install, run `npm i @dac-tech-team-tw/gtm-cli@latest` in that project)";
+
+// 1.7.2+: binary in a platform package, e.g.
+//   node_modules/@dac-tech-team-tw/gtm-cli-win32-x64/bin/gtm.exe
+const PLATFORM_PACKAGE_BINARY =
+  /[\\/]node_modules[\\/]@dac-tech-team-tw[\\/]gtm-cli-[^\\/]+[\\/]bin[\\/]gtm(\.exe)?$/i;
+// <=1.7.1: postinstall downloaded the binary into the main package. A later
+// self-update keeps that path, so newer binaries can still run from it.
+const LEGACY_PACKAGE_BINARY =
+  /[\\/]node_modules[\\/]@dac-tech-team-tw[\\/]gtm-cli[\\/]bin[\\/]gtm-binary(\.exe)?$/i;
 
 /**
- * Whether this binary was installed by npm, i.e. it lives in a platform
- * package such as node_modules/@dac-tech-team-tw/gtm-cli-win32-x64/bin/gtm.exe.
- * npm owns those files, so self-update must not replace them.
+ * Whether this binary lives inside an npm package. npm owns those files, so
+ * self-update must not replace them.
  */
 export function isNpmInstall(execPath: string = Deno.execPath()): boolean {
-  return /[\\/]node_modules[\\/]@dac-tech-team-tw[\\/]gtm-cli-[^\\/]+[\\/]bin[\\/]gtm(\.exe)?$/i
-    .test(execPath);
+  return PLATFORM_PACKAGE_BINARY.test(execPath) || LEGACY_PACKAGE_BINARY.test(execPath);
 }
 
 /**
