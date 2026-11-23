@@ -7,3 +7,4 @@ export * from "./errors.ts";
 export * from "./pagination.ts";
 export * from "./banner.ts";
 export * from "./update-checker.ts";
+export * from "./install-method.ts";

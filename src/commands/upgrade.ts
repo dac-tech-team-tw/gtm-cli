@@ -8,6 +8,7 @@ import {
   getDownloadUrl,
   getExecutablePath,
 } from "../utils/update-checker.ts";
+import { getUpgradeCommand, isNpmInstall, NPM_UPGRADE_COMMAND } from "../utils/install-method.ts";
 import { error, info, success, warn } from "../utils/mod.ts";
 
 export const upgradeCommand = new Command()
@@ -33,7 +34,7 @@ export const upgradeCommand = new Command()
 
       if (options.check) {
         if (updateAvailable) {
-          info(`Update available! Run 'gtm upgrade' to install.`);
+          info(`Update available! Run '${getUpgradeCommand()}' to install.`);
         } else {
           success("You're on the latest version.");
         }
@@ -42,6 +43,14 @@ export const upgradeCommand = new Command()
 
       if (!updateAvailable && !options.force) {
         success("You're already on the latest version.");
+        return;
+      }
+
+      // npm owns the binary in its platform package; replacing it would leave
+      // npm's recorded version out of sync with what actually runs.
+      if (isNpmInstall()) {
+        info("GTM CLI was installed with npm. Upgrade it with npm instead:");
+        console.log(`  ${NPM_UPGRADE_COMMAND}`);
         return;
       }
 
