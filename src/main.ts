@@ -32,7 +32,7 @@ import {
   upgradeCommand,
   agentCommand,
 } from "./commands/mod.ts";
-import { printBanner, checkForUpdate } from "./utils/mod.ts";
+import { printBanner, checkForUpdate, getUpgradeCommand } from "./utils/mod.ts";
 
 // ANSI colors
 const YELLOW = "\x1b[33m";
@@ -53,7 +53,7 @@ async function showUpdateHint(quiet: boolean): Promise<void> {
     if (updateAvailable && latestVersion) {
       console.log("");
       console.log(`${YELLOW}💡 Update available: ${latestVersion} (current: ${currentVersion})${RESET}`);
-      console.log(`   Run ${CYAN}gtm upgrade${RESET} to update.`);
+      console.log(`   Run ${CYAN}${getUpgradeCommand()}${RESET} to update.`);
       console.log("");
     }
   } catch {

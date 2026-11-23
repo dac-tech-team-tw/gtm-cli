@@ -8,6 +8,12 @@ import {
   getDownloadUrl,
   getExecutablePath,
 } from "../utils/update-checker.ts";
+import {
+  getUpgradeCommand,
+  isNpmInstall,
+  NPM_LOCAL_UPGRADE_HINT,
+  NPM_UPGRADE_COMMAND,
+} from "../utils/install-method.ts";
 import { error, info, success, warn } from "../utils/mod.ts";
 
 export const upgradeCommand = new Command()
@@ -17,6 +23,16 @@ export const upgradeCommand = new Command()
   .option("--check", "Only check for updates, don't install")
   .action(async (options) => {
     try {
+      // npm owns this binary; replacing it would leave npm's recorded version
+      // out of sync with what actually runs. Answer before any network call so
+      // this works offline and regardless of the latest version.
+      if (isNpmInstall() && !options.check) {
+        info("GTM CLI was installed with npm. Upgrade it with npm instead:");
+        console.log(`  ${NPM_UPGRADE_COMMAND}`);
+        console.log(`  ${NPM_LOCAL_UPGRADE_HINT}`);
+        return;
+      }
+
       info("Checking for updates...");
 
       const { updateAvailable, latestVersion, currentVersion } =
@@ -33,7 +49,7 @@ export const upgradeCommand = new Command()
 
       if (options.check) {
         if (updateAvailable) {
-          info(`Update available! Run 'gtm upgrade' to install.`);
+          info(`Update available! Run '${getUpgradeCommand()}' to install.`);
         } else {
           success("You're on the latest version.");
         }

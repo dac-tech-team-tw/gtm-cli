@@ -162,7 +162,7 @@ gtm config set defaultAccountId 123456
 Most update operations require a fingerprint for optimistic concurrency control. The CLI automatically fetches the current fingerprint if not provided.
 
 ### 5. Self-Update
-- `gtm upgrade` downloads and replaces the binary
+- `gtm upgrade` downloads and replaces the binary; for npm installs (binary inside a `gtm-cli-<platform>` package) it prints the `npm i -g` command instead
 - Update check runs once per day (cached)
 - Shows hint after commands when update available
 

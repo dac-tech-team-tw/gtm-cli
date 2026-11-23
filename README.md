@@ -150,7 +150,7 @@ gtm upgrade --check
 gtm upgrade
 ```
 
-`upgrade` 可檢查或安裝較新版本；升級依賴對應平台的 Release 資產。
+`upgrade` 可檢查或安裝較新版本；升級依賴對應平台的 Release 資產。以 npm 安裝時，`gtm upgrade` 不會替換執行檔，而是提示改用 `npm i -g @dac-tech-team-tw/gtm-cli@latest`，讓 npm 記錄的版本與實際執行檔保持一致。
 
 ## 開發
 
