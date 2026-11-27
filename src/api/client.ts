@@ -47,6 +47,7 @@ export async function getTagManagerClient(): Promise<TagManager> {
     
     cachedClient = tagmanager({
       version: "v2",
+      fetchImplementation: fetch,
       headers: {
         Authorization: `Bearer ${saToken.accessToken}`,
       },
@@ -65,6 +66,9 @@ export async function getTagManagerClient(): Promise<TagManager> {
 
   cachedClient = tagmanager({
     version: "v2",
+    // Deno's fetch: gaxios would otherwise `import("node-fetch")` at runtime,
+    // which the Windows `deno compile` binary fails to resolve.
+    fetchImplementation: fetch,
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

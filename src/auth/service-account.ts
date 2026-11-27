@@ -116,6 +116,7 @@ export async function loginWithServiceAccount(
   const auth = new GoogleAuth({
     keyFile: keyPath,
     scopes: OAUTH_SCOPES,
+    clientOptions: { transporterOptions: { fetchImplementation: fetch } },
   });
 
   // Test getting an access token
@@ -147,6 +148,7 @@ export async function getServiceAccountAccessToken(): Promise<{
     const auth = new GoogleAuth({
       keyFile: envKeyPath,
       scopes: OAUTH_SCOPES,
+      clientOptions: { transporterOptions: { fetchImplementation: fetch } },
     });
     const client = await auth.getClient();
     const tokenResponse = await client.getAccessToken();
@@ -172,6 +174,7 @@ export async function getServiceAccountAccessToken(): Promise<{
     const auth = new GoogleAuth({
       keyFile: authMethod.serviceAccountPath,
       scopes: OAUTH_SCOPES,
+      clientOptions: { transporterOptions: { fetchImplementation: fetch } },
     });
     const client = await auth.getClient();
     const tokenResponse = await client.getAccessToken();
